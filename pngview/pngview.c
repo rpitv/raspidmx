@@ -53,6 +53,7 @@ const char *program = NULL;
 //-------------------------------------------------------------------------
 
 volatile bool run = true;
+volatile bool startDissolve = false;
 
 //-------------------------------------------------------------------------
 
@@ -63,6 +64,9 @@ signalHandler(
     switch (signalNumber)
     {
     case SIGINT:
+        startDissolve = true;
+        break;
+
     case SIGTERM:
 
         run = false;
@@ -98,6 +102,12 @@ int main(int argc, char *argv[])
     int32_t yOffset = 0;
     bool xOffsetSet = false;
     bool yOffsetSet = false;
+
+
+    int dissolveUpFrames = -1;
+    int dissolveDownFrames = -1;
+    int dissolveTotalFrames = 10;
+
 
     program = basename(argv[0]);
 
@@ -218,9 +228,10 @@ int main(int argc, char *argv[])
         yOffset = (info.height - imageLayer.image.height) / 2;
     }
 
-    addElementImageLayerOffset(&imageLayer,
+    addElementImageLayerOffsetOpacity(&imageLayer,
                                xOffset,
                                yOffset,
+                               0,
                                display,
                                update);
 
@@ -230,10 +241,38 @@ int main(int argc, char *argv[])
     //---------------------------------------------------------------------
 
     int32_t step = 1;
+    uint8_t opacity = 0xff;
+    dissolveUpFrames = 0;
 
     while (run)
     {
         int c = 0;
+        bool changeOpacity = false;
+
+	if (startDissolve && dissolveDownFrames == -1) {
+		dissolveDownFrames = 0;
+	}
+
+        if (dissolveUpFrames != -1 && dissolveUpFrames <= dissolveTotalFrames)
+        {
+            opacity = 255 * dissolveUpFrames / dissolveTotalFrames;
+            dissolveUpFrames++;
+            changeOpacity = true;
+        }
+
+        if (dissolveDownFrames != -1 && dissolveDownFrames <= dissolveTotalFrames)
+        {
+            opacity = 255 * (dissolveTotalFrames - dissolveDownFrames)
+                / dissolveTotalFrames;
+            dissolveDownFrames++;
+            changeOpacity = true;
+        }
+
+        if (dissolveDownFrames > dissolveTotalFrames)
+        {
+            run = false;
+        }
+
         if (keyPressed(&c))
         {
             c = tolower(c);
@@ -302,6 +341,12 @@ int main(int argc, char *argv[])
                     step = 1;
                 }
                 break;
+
+            case 't':
+
+                opacity = ~opacity;
+                changeOpacity = true;
+                break;
             }
 
             if (moveLayer)
@@ -314,10 +359,21 @@ int main(int argc, char *argv[])
                 result = vc_dispmanx_update_submit_sync(update);
                 assert(result == 0);
             }
+
         }
         else
         {
             usleep(100000);
+        }
+        if (changeOpacity)
+        {
+            update = vc_dispmanx_update_start(0);
+            assert(update != 0);
+
+            setImageLayerOpacity(&imageLayer, opacity, update);
+
+            result = vc_dispmanx_update_submit_sync(update);
+            assert(result == 0);
         }
     }
 

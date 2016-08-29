@@ -41,6 +41,7 @@ typedef struct
     VC_RECT_T srcRect;
     VC_RECT_T dstRect;
     int32_t layer;
+    uint8_t opacity;
     DISPMANX_RESOURCE_HANDLE_T resource;
     DISPMANX_ELEMENT_HANDLE_T element;
 } IMAGE_LAYER_T;
@@ -52,6 +53,7 @@ initImageLayer(
     IMAGE_LAYER_T *il,
     int32_t width,
     int32_t height,
+    uint8_t opacity,
     VC_IMAGE_TYPE_T type);
 
 void
@@ -64,6 +66,15 @@ addElementImageLayerOffset(
     IMAGE_LAYER_T *il,
     int32_t xOffset,
     int32_t yOffset,
+    DISPMANX_DISPLAY_HANDLE_T display,
+    DISPMANX_UPDATE_HANDLE_T update);
+
+void
+addElementImageLayerOffsetOpacity(
+    IMAGE_LAYER_T *il,
+    int32_t xOffset,
+    int32_t yOffset,
+    uint8_t opacity,
     DISPMANX_DISPLAY_HANDLE_T display,
     DISPMANX_UPDATE_HANDLE_T update);
 
@@ -94,6 +105,12 @@ moveImageLayer(
     IMAGE_LAYER_T *il,
     int32_t xOffset,
     int32_t yOffset,
+    DISPMANX_UPDATE_HANDLE_T update);
+
+void
+setImageLayerOpacity(
+    IMAGE_LAYER_T *il,
+    uint8_t opacity,
     DISPMANX_UPDATE_HANDLE_T update);
 
 

@@ -39,8 +39,10 @@ initImageLayer(
     IMAGE_LAYER_T *il,
     int32_t width,
     int32_t height,
+    uint8_t opacity,
     VC_IMAGE_TYPE_T type)
 {
+    il->opacity = opacity;
     initImage(&(il->image), type, width, height, false);
 }
 
@@ -105,6 +107,19 @@ addElementImageLayerOffset(
     addElementImageLayer(il, display, update);
 }
 
+void
+addElementImageLayerOffsetOpacity(
+    IMAGE_LAYER_T *il,
+    int32_t xOffset,
+    int32_t yOffset,
+    uint8_t opacity,
+    DISPMANX_DISPLAY_HANDLE_T display,
+    DISPMANX_UPDATE_HANDLE_T update)
+{
+    il->opacity = opacity;
+    addElementImageLayerOffset(il, xOffset, yOffset, display, update);
+}
+
 //-------------------------------------------------------------------------
 
 void
@@ -139,8 +154,8 @@ addElementImageLayer(
 {
     VC_DISPMANX_ALPHA_T alpha =
     {
-        DISPMANX_FLAGS_ALPHA_FROM_SOURCE, 
-        255, /*alpha 0->255*/
+        DISPMANX_FLAGS_ALPHA_FROM_SOURCE | DISPMANX_FLAGS_ALPHA_MIX,
+        il->opacity, /*alpha 0->255*/
         0
     };
 
@@ -226,6 +241,26 @@ moveImageLayer(
                                           ELEMENT_CHANGE_DEST_RECT,
                                           0,
                                           255,
+                                          &(il->dstRect),
+                                          &(il->srcRect),
+                                          0,
+                                          DISPMANX_NO_ROTATE);
+    assert(result == 0);
+}
+
+void setImageLayerOpacity(
+    IMAGE_LAYER_T *il,
+    uint8_t opacity,
+    DISPMANX_UPDATE_HANDLE_T update)
+{
+    il->opacity = opacity;
+
+    int result =
+    vc_dispmanx_element_change_attributes(update,
+                                          il->element,
+                                          ELEMENT_CHANGE_OPACITY,
+                                          0,
+                                          il->opacity,
                                           &(il->dstRect),
                                           &(il->srcRect),
                                           0,
